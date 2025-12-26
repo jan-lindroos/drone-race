@@ -21,20 +21,21 @@ CHECKPOINT_DIR = Path(__file__).parent / "checkpoints"
 
 def progress_fn(step: int, metrics: dict[str, Any]) -> None:
     """Log training progress."""
-    reward_key = None
-    for key in ["eval/episode_reward", "eval/episode_reward_mean"]:
-        if key in metrics:
-            reward_key = key
-            break
+    reward = metrics.get("eval/episode_reward", metrics.get("eval/episode_reward_mean"))
+    ep_len = metrics.get("eval/avg_episode_length")
+    loss = metrics.get("training/total_loss")
+    gates = metrics.get("eval/episode_gates_passed")
 
-    if reward_key:
-        logging.info(
-            "step=%d, reward=%.2f",
-            step,
-            metrics[reward_key],
-        )
-    else:
-        logging.info("step=%d", step)
+    parts = [f"step={step}"]
+    if reward is not None:
+        parts.append(f"reward={float(reward):.2f}")
+    if ep_len is not None:
+        parts.append(f"ep_len={float(ep_len):.0f}")
+    if gates is not None:
+        parts.append(f"gates={float(gates):.1f}")
+    if loss is not None:
+        parts.append(f"loss={float(loss):.4f}")
+    logging.info(", ".join(parts))
 
 
 def train(
