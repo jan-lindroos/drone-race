@@ -8,6 +8,8 @@ dependencies = [
     "mujoco",
     "playground",
     "jinja2",
+    "brax",
+    "flax"
 ]
 
 [build-system]
