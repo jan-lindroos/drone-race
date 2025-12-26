@@ -74,9 +74,9 @@ class Env:
         """Size of observation vector.
 
         This includes the gyro (3) + accel (3) + quat (4) + vel (3) +
-        target_dir (3) + next_dir (3) = 19.
+        target_dir (3) + next_dir (3) + gate_angles (2) = 21.
         """
-        return 19
+        return 21
 
     @property
     def backend(self) -> str:
@@ -155,9 +155,10 @@ class Env:
             current_gate: Index of the current target gate (1,).
 
         Returns:
-            Observation (19,): gyro, accel, quat, vel, target_dir, next_dir.
+            Observation (21,): gyro, accel, quat, vel, target_dir, next_dir, gate_angles.
         """
         drone_pos = data.xpos[self.drone_body_id]
+        drone_quat = data.xquat[self.drone_body_id]
         gate_idx = current_gate[0].astype(jnp.int32)
         next_idx = (gate_idx + 1) % self.gate_count
 
@@ -165,8 +166,16 @@ class Env:
         target_dir = normalise(self.gates["positions"][gate_idx] - drone_pos)
         next_dir = normalise(self.gates["positions"][next_idx] - drone_pos)
 
-        # sensor data: gyro, accelerometer, and framequat
-        return jnp.concatenate([data.sensordata[0:10], data.qvel[0:3], target_dir, next_dir])
+        drone_yaw = jnp.arctan2(
+            2.0 * (drone_quat[0] * drone_quat[3] + drone_quat[1] * drone_quat[2]),
+            1.0 - 2.0 * (drone_quat[2] ** 2 + drone_quat[3] ** 2),
+        )
+        rel_angle = self.gates["angles"][gate_idx] - drone_yaw
+        # Smooth out the signal.
+        gate_angles = jnp.array([jnp.sin(rel_angle), jnp.cos(rel_angle)])
+
+        # Sensor data: gyro, accelerometer, and framequat.
+        return jnp.concatenate([data.sensordata[0:10], data.qvel[0:3], target_dir, next_dir, gate_angles])
 
     def check_gate_passage(
         self,
@@ -218,7 +227,7 @@ class Env:
         drone_pos = data.xpos[self.drone_body_id]
         drone_quat = data.xquat[self.drone_body_id]
 
-        has_collision = data.ncon > 0
+        has_collision = jnp.any(data.contact.dist < 0)
         too_far = jnp.linalg.norm(drone_pos[:2]) > 50.0
 
         up_z = 1.0 - 2.0 * (drone_quat[1] ** 2 + drone_quat[2] ** 2)
