@@ -1,0 +1,83 @@
+<mujoco model="Drone Race">
+  <statistic center="0 0 0.1" extent="0.6" meansize=".05"/>
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <global azimuth="-20" elevation="-20" ellipsoidinertia="true"/>
+    <map zfar="200"/>
+  </visual>
+  <default>
+    <default class="x2">
+      <geom mass="0"/>
+      <motor ctrlrange="0 13"/>
+      <mesh scale="0.01 0.01 0.01"/>
+      <default class="visual">
+        <geom group="2" type="mesh" contype="0" conaffinity="0"/>
+      </default>
+      <default class="collision">
+        <geom group="3" type="box"/>
+        <default class="rotor">
+          <geom type="ellipsoid" size=".13 .13 .01"/>
+        </default>
+      </default>
+      <site group="5"/>
+    </default>
+  </default>
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <material name="groundplane" rgba="0.2 0.2 0.2 1" reflectance="0.2"/>
+    <texture type="2d" file="x2_texture.png"/>
+    <material name="phong3SG" texture="x2_texture"/>
+    <material name="invisible" rgba="0 0 0 0"/>
+    <mesh class="x2" file="x2.obj"/>
+    <texture type="2d" name="gate_checker" builtin="checker" rgb1="0 0 0" rgb2="1 1 1" width="100" height="100"/>
+    <material name="gate_material" texture="gate_checker" texuniform="true" texrepeat="20 20"/>
+  </asset>
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+{% for gate in gates %}
+    <body name="gate{{ loop.index0 }}" pos="{{ gate.pos }}" euler="0 0 {{ gate.angle }}">
+      <geom name="gate{{ loop.index0 }}_left" type="box" size="0.1 0.025 1.1" pos="-1.0 0 1.0" material="gate_material"/>
+      <geom name="gate{{ loop.index0 }}_right" type="box" size="0.1 0.025 1.1" pos="1.0 0 1.0" material="gate_material"/>
+      <geom name="gate{{ loop.index0 }}_top" type="box" size="0.9 0.025 0.1" pos="0 0 2.0" material="gate_material"/>
+      <geom name="gate{{ loop.index0 }}_bottom" type="box" size="0.9 0.025 0.1" pos="0 0 0" material="gate_material"/>
+    </body>
+{% endfor %}
+{% for drone in drones %}
+    <body name="drone{{ loop.index0 }}" pos="{{ drone.pos }}" childclass="x2">
+      <freejoint/>
+      <camera name="drone{{ loop.index0 }}_track" pos="-1 0 .5" xyaxes="0 -1 0 1 0 2" mode="trackcom"/>
+      <site name="drone{{ loop.index0 }}_imu" pos="0 0 .02"/>
+      <geom material="phong3SG" mesh="x2" class="visual" quat="0 0 1 1"/>
+      <geom class="collision" size=".06 .027 .02" pos=".04 0 .02"/>
+      <geom class="collision" size=".06 .027 .02" pos=".04 0 .06"/>
+      <geom class="collision" size=".05 .027 .02" pos="-.07 0 .065"/>
+      <geom class="collision" size=".023 .017 .01" pos="-.137 .008 .065" quat="1 0 0 1"/>
+      <geom name="drone{{ loop.index0 }}_rotor1" class="rotor" pos="-.14 -.18 .05" mass=".25"/>
+      <geom name="drone{{ loop.index0 }}_rotor2" class="rotor" pos="-.14 .18 .05" mass=".25"/>
+      <geom name="drone{{ loop.index0 }}_rotor3" class="rotor" pos=".14 .18 .08" mass=".25"/>
+      <geom name="drone{{ loop.index0 }}_rotor4" class="rotor" pos=".14 -.18 .08" mass=".25"/>
+      <geom size=".16 .04 .02" pos="0 0 0.02" type="ellipsoid" mass=".325" class="visual" material="invisible"/>
+      <site name="drone{{ loop.index0 }}_thrust1" pos="-.14 -.18 .05"/>
+      <site name="drone{{ loop.index0 }}_thrust2" pos="-.14 .18 .05"/>
+      <site name="drone{{ loop.index0 }}_thrust3" pos=".14 .18 .08"/>
+      <site name="drone{{ loop.index0 }}_thrust4" pos=".14 -.18 .08"/>
+    </body>
+{% endfor %}
+  </worldbody>
+  <actuator>
+{% for drone in drones %}
+    <motor class="x2" name="drone{{ loop.index0 }}_thrust1" site="drone{{ loop.index0 }}_thrust1" gear="0 0 1 0 0 -.0201"/>
+    <motor class="x2" name="drone{{ loop.index0 }}_thrust2" site="drone{{ loop.index0 }}_thrust2" gear="0 0 1 0 0  .0201"/>
+    <motor class="x2" name="drone{{ loop.index0 }}_thrust3" site="drone{{ loop.index0 }}_thrust3" gear="0 0 1 0 0  .0201"/>
+    <motor class="x2" name="drone{{ loop.index0 }}_thrust4" site="drone{{ loop.index0 }}_thrust4" gear="0 0 1 0 0 -.0201"/>
+{% endfor %}
+  </actuator>
+  <sensor>
+{% for drone in drones %}
+    <gyro name="drone{{ loop.index0 }}_gyro" site="drone{{ loop.index0 }}_imu"/>
+    <accelerometer name="drone{{ loop.index0 }}_accel" site="drone{{ loop.index0 }}_imu"/>
+    <framequat name="drone{{ loop.index0 }}_quat" objtype="site" objname="drone{{ loop.index0 }}_imu"/>
+{% endfor %}
+  </sensor>
+</mujoco>

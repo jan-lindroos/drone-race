@@ -1,0 +1,13 @@
+__pycache__/
+*.egg-info/
+
+.venv/
+
+.vscode/
+
+*.pkl
+*.pth
+checkpoints/
+
+.DS_Store
+*.log
