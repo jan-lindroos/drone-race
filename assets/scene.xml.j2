@@ -16,7 +16,7 @@
       <default class="collision">
         <geom group="3" type="box"/>
         <default class="rotor">
-          <geom type="ellipsoid" size=".13 .13 .01"/>
+          <geom type="sphere" size=".05"/>
         </default>
       </default>
       <site group="5"/>
@@ -43,7 +43,7 @@
       <geom name="gate{{ loop.index0 }}_bottom" type="box" size="0.9 0.025 0.1" pos="0 0 0" material="gate_material"/>
     </body>
 {% endfor %}
-    <body name="drone" pos="0 0 0.1" childclass="x2">
+    <body name="drone" pos="0 0 1.0" childclass="x2">
       <freejoint/>
       <camera name="drone_track" pos="-1 0 .5" xyaxes="0 -1 0 1 0 2" mode="trackcom"/>
       <site name="drone_imu" pos="0 0 .02"/>
@@ -56,7 +56,7 @@
       <geom name="drone_rotor2" class="rotor" pos="-.14 .18 .05" mass=".25"/>
       <geom name="drone_rotor3" class="rotor" pos=".14 .18 .08" mass=".25"/>
       <geom name="drone_rotor4" class="rotor" pos=".14 -.18 .08" mass=".25"/>
-      <geom size=".16 .04 .02" pos="0 0 0.02" type="ellipsoid" mass=".325" class="visual" material="invisible"/>
+      <geom size=".16 .04 .02" pos="0 0 0.02" type="box" mass=".325" class="visual" material="invisible"/>
       <site name="drone_thrust1" pos="-.14 -.18 .05"/>
       <site name="drone_thrust2" pos="-.14 .18 .05"/>
       <site name="drone_thrust3" pos=".14 .18 .08"/>

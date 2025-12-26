@@ -1,8 +1,9 @@
+from pathlib import Path
+
 import jax
 import jax.numpy as jnp
-import mujoco
 from jinja2 import Template
-from importlib.resources import files
+import mujoco
 
 
 def load_scene(
@@ -26,28 +27,39 @@ def load_scene(
     """
     key1, key2 = jax.random.split(key)
     angles = jnp.linspace(0, 2 * jnp.pi, gate_count, endpoint=False)
-    noise_h = jax.random.uniform(key1, (gate_count, 2), minval=-horizontal_deviation, maxval=horizontal_deviation)
-    noise_v = jax.random.uniform(key2, (gate_count,), minval=-vertical_deviation, maxval=vertical_deviation)
+    noise_h = jax.random.uniform(
+        key1, (gate_count, 2), minval=-horizontal_deviation, maxval=horizontal_deviation
+    )
+    noise_v = jax.random.uniform(
+        key2, (gate_count,), minval=-vertical_deviation, maxval=vertical_deviation
+    )
 
-    positions = jnp.stack([
-        course_radius * jnp.cos(angles) + noise_h[:, 0],
-        course_radius * jnp.sin(angles) + noise_h[:, 1],
-        jnp.full(gate_count, 3.0) + noise_v
-    ], axis=1)
+    positions = jnp.stack(
+        [
+            course_radius * jnp.cos(angles) + noise_h[:, 0],
+            course_radius * jnp.sin(angles) + noise_h[:, 1],
+            jnp.full(gate_count, 3.0) + noise_v,
+        ],
+        axis=1,
+    )
 
     gates_xml = [
         {
             "pos": f"{positions[i, 0]} {positions[i, 1]} {positions[i, 2]}",
-            "angle": float(jnp.degrees(angles[i]))
+            "angle": float(jnp.degrees(angles[i])),
         }
         for i in range(gate_count)
     ]
-    assets = files("assets")
+
+    assets = Path(__file__).parent.parent / "assets"
     xml = Template((assets / "scene.xml.j2").read_text()).render(gates=gates_xml)
-    mj_model = mujoco.MjModel.from_xml_string(xml, assets={
-        "x2.obj": (assets / "x2.obj").read_bytes(),
-        "x2_texture.png": (assets / "x2_texture.png").read_bytes()
-    })
+    mj_model = mujoco.MjModel.from_xml_string(
+        xml,
+        assets={
+            "x2.obj": (assets / "x2.obj").read_bytes(),
+            "x2_texture.png": (assets / "x2_texture.png").read_bytes(),
+        },
+    )
 
     gates = {"positions": positions, "angles": angles}
     return mj_model, gates

@@ -1,53 +1,103 @@
-from mujoco_playground._src.mjx_env import MjxEnv, State
-import mujoco
-from mujoco import mjx
+from typing import Any, Dict
+
+from flax import struct
 import jax
 import jax.numpy as jnp
+import mujoco
+from mujoco import mjx
 
 from load_scene import load_scene
 
 
-class Env(MjxEnv):
-    """Drone racing environment with randomised gate courses."""
+@struct.dataclass
+class State:
+    """Environment state for training and inference."""
 
-    def __init__(self, key: jax.Array):
-        """Initialise environment with a random gate course.
+    data: mjx.Data
+    obs: jax.Array
+    reward: jax.Array
+    done: jax.Array
+    metrics: Dict[str, jax.Array]
+    info: Dict[str, Any]
+
+
+class Env:
+    """Drone racing environment with randomised gate courses.
+
+    Compatible with Brax PPO training infrastructure.
+    """
+
+    def __init__(
+        self,
+        gate_count: int = 6,
+        course_radius: float = 12.0,
+        vertical_deviation: float = 2.0,
+        horizontal_deviation: float = 3.0,
+        seed: int = 0,
+    ):
+        """Initialise environment with a gate course.
 
         Args:
-            key: JAX random key for course generation.
+            gate_count: Number of gates in the course.
+            course_radius: Radius of the circular course layout.
+            vertical_deviation: Maximum vertical noise for gate positions.
+            horizontal_deviation: Maximum horizontal noise for gate positions.
+            seed: Random seed for course generation.
         """
-        key1, key2 = jax.random.split(key)
-        self.gate_count = jax.random.randint(key2, (), 4, 8)
+        self.gate_count = gate_count
+        # Use threefry2x32 for Metal compatibility (avoids int64).
+        key = jax.random.key(seed, impl="threefry2x32")
         mj_model, self.gates = load_scene(
-            key=key1,
-            gate_count=self.gate_count,
-            course_radius=self.gate_count * 2.0,
-            vertical_deviation=2.0,
-            horizontal_deviation=3.0,
+            key=key,
+            gate_count=gate_count,
+            course_radius=course_radius,
+            vertical_deviation=vertical_deviation,
+            horizontal_deviation=horizontal_deviation,
         )
 
-        # use recommended solver configuration, per
+        # Use recommended solver configuration, per
         # https://github.com/google-deepmind/mujoco/blob/main/mjx/tutorial.ipynb
         mj_model.opt.solver = mujoco.mjtSolver.mjSOL_CG
         mj_model.opt.iterations = 6
         mj_model.opt.ls_iterations = 6
 
+        self._mj_model = mj_model
+        self._mjx_model = mjx.put_model(mj_model)
         self.drone_body_id = mj_model.body("drone").id
 
-        super().__init__(mj_model)
-        
     @property
     def action_size(self) -> int:
         return 4
-    
+
     @property
     def observation_size(self) -> int:
-        """Size of observation vector. 
-        
-        This includes the gyro (3) + accel (3) + quat (4) + vel (3) + target_dir (3) + next_dir (3) = 19.
+        """Size of observation vector.
+
+        This includes the gyro (3) + accel (3) + quat (4) + vel (3) +
+        target_dir (3) + next_dir (3) = 19.
         """
         return 19
-        
+
+    @property
+    def backend(self) -> str:
+        """The physics backend used by this environment."""
+        return "mjx"
+
+    @property
+    def mjx_model(self) -> mjx.Model:
+        """MJX model for the environment."""
+        return self._mjx_model
+
+    @property
+    def mj_model(self) -> mujoco.MjModel:
+        """MuJoCo model for the environment."""
+        return self._mj_model
+
+    @property
+    def unwrapped(self) -> "Env":
+        """Returns the unwrapped environment."""
+        return self
+
     def reset(self, rng: jax.Array) -> State:
         """Reset the environment to initial state.
 
@@ -63,6 +113,7 @@ class Env(MjxEnv):
         reward, done = jnp.zeros(2)
         current_gate = jnp.zeros(1)
         obs = self.get_obs(data, current_gate)
+
         info = {
             "current_gate": current_gate,
             "prev_pos": data.xpos[self.drone_body_id],
@@ -87,13 +138,12 @@ class Env(MjxEnv):
             data, state.info["current_gate"], state.info["prev_pos"]
         )
         obs = self.get_obs(data, new_gate)
-        done = self.is_terminated(data)
-        reward = jax.lax.select(done, -20.0, reward)
+        done = self.is_terminated(data).astype(jnp.float32)
+        reward = jax.lax.select(done > 0.5, -20.0, reward)
 
-        new_info = {
-            "current_gate": new_gate,
-            "prev_pos": curr_pos,
-        }
+        new_info = state.info.copy()
+        new_info["current_gate"] = new_gate
+        new_info["prev_pos"] = curr_pos
 
         return state.replace(data=data, obs=obs, reward=reward, done=done, info=new_info)
     
@@ -139,7 +189,7 @@ class Env(MjxEnv):
         gate_pos = self.gates["positions"][gate_idx]
         gate_angle = self.gates["angles"][gate_idx]
 
-        # transform to gate's local frame
+        # Transform to gate's local frame.
         cos_a, sin_a = jnp.cos(gate_angle), jnp.sin(gate_angle)
         rel = curr_pos - gate_pos
         local_x = cos_a * rel[0] + sin_a * rel[1]
@@ -170,9 +220,8 @@ class Env(MjxEnv):
 
         has_collision = data.ncon > 0
         too_far = jnp.linalg.norm(drone_pos[:2]) > 50.0
-        too_low = drone_pos[2] < 0.05
 
         up_z = 1.0 - 2.0 * (drone_quat[1] ** 2 + drone_quat[2] ** 2)
         flipped = up_z < 0.0
 
-        return has_collision | too_far | too_low | flipped
+        return has_collision | too_far | flipped
