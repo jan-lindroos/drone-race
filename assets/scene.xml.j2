@@ -43,41 +43,35 @@
       <geom name="gate{{ loop.index0 }}_bottom" type="box" size="0.9 0.025 0.1" pos="0 0 0" material="gate_material"/>
     </body>
 {% endfor %}
-{% for drone in drones %}
-    <body name="drone{{ loop.index0 }}" pos="{{ drone.pos }}" childclass="x2">
+    <body name="drone" pos="0 0 0.1" childclass="x2">
       <freejoint/>
-      <camera name="drone{{ loop.index0 }}_track" pos="-1 0 .5" xyaxes="0 -1 0 1 0 2" mode="trackcom"/>
-      <site name="drone{{ loop.index0 }}_imu" pos="0 0 .02"/>
+      <camera name="drone_track" pos="-1 0 .5" xyaxes="0 -1 0 1 0 2" mode="trackcom"/>
+      <site name="drone_imu" pos="0 0 .02"/>
       <geom material="phong3SG" mesh="x2" class="visual" quat="0 0 1 1"/>
       <geom class="collision" size=".06 .027 .02" pos=".04 0 .02"/>
       <geom class="collision" size=".06 .027 .02" pos=".04 0 .06"/>
       <geom class="collision" size=".05 .027 .02" pos="-.07 0 .065"/>
       <geom class="collision" size=".023 .017 .01" pos="-.137 .008 .065" quat="1 0 0 1"/>
-      <geom name="drone{{ loop.index0 }}_rotor1" class="rotor" pos="-.14 -.18 .05" mass=".25"/>
-      <geom name="drone{{ loop.index0 }}_rotor2" class="rotor" pos="-.14 .18 .05" mass=".25"/>
-      <geom name="drone{{ loop.index0 }}_rotor3" class="rotor" pos=".14 .18 .08" mass=".25"/>
-      <geom name="drone{{ loop.index0 }}_rotor4" class="rotor" pos=".14 -.18 .08" mass=".25"/>
+      <geom name="drone_rotor1" class="rotor" pos="-.14 -.18 .05" mass=".25"/>
+      <geom name="drone_rotor2" class="rotor" pos="-.14 .18 .05" mass=".25"/>
+      <geom name="drone_rotor3" class="rotor" pos=".14 .18 .08" mass=".25"/>
+      <geom name="drone_rotor4" class="rotor" pos=".14 -.18 .08" mass=".25"/>
       <geom size=".16 .04 .02" pos="0 0 0.02" type="ellipsoid" mass=".325" class="visual" material="invisible"/>
-      <site name="drone{{ loop.index0 }}_thrust1" pos="-.14 -.18 .05"/>
-      <site name="drone{{ loop.index0 }}_thrust2" pos="-.14 .18 .05"/>
-      <site name="drone{{ loop.index0 }}_thrust3" pos=".14 .18 .08"/>
-      <site name="drone{{ loop.index0 }}_thrust4" pos=".14 -.18 .08"/>
+      <site name="drone_thrust1" pos="-.14 -.18 .05"/>
+      <site name="drone_thrust2" pos="-.14 .18 .05"/>
+      <site name="drone_thrust3" pos=".14 .18 .08"/>
+      <site name="drone_thrust4" pos=".14 -.18 .08"/>
     </body>
-{% endfor %}
   </worldbody>
   <actuator>
-{% for drone in drones %}
-    <motor class="x2" name="drone{{ loop.index0 }}_thrust1" site="drone{{ loop.index0 }}_thrust1" gear="0 0 1 0 0 -.0201"/>
-    <motor class="x2" name="drone{{ loop.index0 }}_thrust2" site="drone{{ loop.index0 }}_thrust2" gear="0 0 1 0 0  .0201"/>
-    <motor class="x2" name="drone{{ loop.index0 }}_thrust3" site="drone{{ loop.index0 }}_thrust3" gear="0 0 1 0 0  .0201"/>
-    <motor class="x2" name="drone{{ loop.index0 }}_thrust4" site="drone{{ loop.index0 }}_thrust4" gear="0 0 1 0 0 -.0201"/>
-{% endfor %}
+    <motor class="x2" name="drone_thrust1" site="drone_thrust1" gear="0 0 1 0 0 -.0201"/>
+    <motor class="x2" name="drone_thrust2" site="drone_thrust2" gear="0 0 1 0 0  .0201"/>
+    <motor class="x2" name="drone_thrust3" site="drone_thrust3" gear="0 0 1 0 0  .0201"/>
+    <motor class="x2" name="drone_thrust4" site="drone_thrust4" gear="0 0 1 0 0 -.0201"/>
   </actuator>
   <sensor>
-{% for drone in drones %}
-    <gyro name="drone{{ loop.index0 }}_gyro" site="drone{{ loop.index0 }}_imu"/>
-    <accelerometer name="drone{{ loop.index0 }}_accel" site="drone{{ loop.index0 }}_imu"/>
-    <framequat name="drone{{ loop.index0 }}_quat" objtype="site" objname="drone{{ loop.index0 }}_imu"/>
-{% endfor %}
+    <gyro name="drone_gyro" site="drone_imu"/>
+    <accelerometer name="drone_accel" site="drone_imu"/>
+    <framequat name="drone_quat" objtype="site" objname="drone_imu"/>
   </sensor>
 </mujoco>
