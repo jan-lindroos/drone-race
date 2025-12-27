@@ -4,10 +4,6 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# MJX only supports CUDA or CPU, not Metal.
-os.environ["JAX_PLATFORMS"] = "cpu"
-
-# Add project root to path.
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from brax.training.agents.ppo import train as ppo
