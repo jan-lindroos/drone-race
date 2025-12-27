@@ -8,10 +8,10 @@ import mujoco
 
 def load_scene(
     key: jax.Array,
-    gate_count: int,
-    course_radius: float,
-    vertical_deviation: float,
-    horizontal_deviation: float,
+    gate_count: int = 6,
+    course_radius: float = 12.0,
+    vertical_deviation: float = 2.0,
+    horizontal_deviation: float = 3.0,
 ) -> tuple[mujoco.MjModel, dict[str, jax.Array]]:
     """Generate a randomised drone racing course.
 
@@ -42,7 +42,6 @@ def load_scene(
         ],
         axis=1,
     )
-
     gates_xml = [
         {
             "pos": f"{positions[i, 0]} {positions[i, 1]} {positions[i, 2]}",

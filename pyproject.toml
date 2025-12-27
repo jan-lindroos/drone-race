@@ -1,14 +1,13 @@
 [project]
 name = "drone-race"
-version = "0.1.0"
+version = "1.0"
 description = ""
 requires-python = ">=3.10"
 dependencies = [
-    "jax[cpu]",
-    "mujoco",
-    "playground",
+    "jax",
+    "mujoco-mjx",
     "jinja2",
-    "brax"
+    "brax",
 ]
 
 [build-system]
