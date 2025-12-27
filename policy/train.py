@@ -80,6 +80,8 @@ def train(
         episode_length=episode_length,
         network_factory=network_factory,
         save_checkpoint_path=save_checkpoint_path,
+        num_evals=100,
+        og_training_metrics=True,
         wrap_env=False,
     )
 
