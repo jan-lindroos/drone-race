@@ -1,5 +1,4 @@
 import functools
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -12,6 +11,7 @@ from env.env import DroneRace
 
 
 def train():
+    print("Starting training...", flush=True)
     env = DroneRace()
 
     checkpoint_dir = Path(__file__).parent / "checkpoints"
@@ -20,7 +20,7 @@ def train():
     train = functools.partial(
         ppo.train,
         num_timesteps=10_000_000,
-        num_evals=10,
+        num_evals=100,
         reward_scaling=0.1,
         episode_length=5000,
         action_repeat=1,
@@ -33,8 +33,6 @@ def train():
         num_envs=3072,
         batch_size=512,
         seed=0,
-        log_training_metrics=True,
-        training_metrics_steps=20_000,
         save_checkpoint_path=str(checkpoint_dir),
     )
 
@@ -44,7 +42,7 @@ def train():
             msg += f" reward: {metrics['eval/episode_reward']:.2f}"
         if "eval/episode_reward_std" in metrics:
             msg += f" (±{metrics['eval/episode_reward_std']:.2f})"
-        print(msg)
+        print(msg, flush=True)
 
     make_inference_fn, params, _ = train(environment=env, progress_fn=progress_callback)
 
