@@ -18,13 +18,15 @@ from env.env import DroneRace
 def train():
     env = DroneRace()
 
+    checkpoint_dir = Path(__file__).parent / "checkpoints"
+    checkpoint_dir.mkdir(exist_ok=True)
+
     train = functools.partial(
         ppo.train,
-        num_timesteps=20_000_000,
-        num_evals=5,
+        num_timesteps=10_000_000,
+        num_evals=10,
         reward_scaling=0.1,
-        episode_length=1000,
-        normalize_observations=True,
+        episode_length=5000,
         action_repeat=1,
         unroll_length=10,
         num_minibatches=24,
@@ -35,6 +37,9 @@ def train():
         num_envs=3072,
         batch_size=512,
         seed=0,
+        log_training_metrics=True,
+        training_metrics_steps=20_000,
+        save_checkpoint_path=str(checkpoint_dir),
     )
 
     def progress_callback(num_steps, metrics):
@@ -51,4 +56,3 @@ def train():
 
 if __name__ == "__main__":
     train()
-    
