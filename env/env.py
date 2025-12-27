@@ -45,7 +45,6 @@ class Env:
             seed: Random seed for course generation.
         """
         self.gate_count = gate_count
-        # Use threefry2x32 for Metal compatibility (avoids int64).
         key = jax.random.key(seed, impl="threefry2x32")
         mj_model, self.gates = load_scene(
             key=key,
@@ -126,12 +125,14 @@ class Env:
 
         Args:
             state: Current environment state.
-            action: Motor thrust commands (4,).
+            action: Motor thrust commands (4,), expected in [-1, 1].
 
         Returns:
             Updated environment state.
         """
-        data = state.data.replace(ctrl=action)
+        # Scale action from [-1, 1] to actuator range [0, 13].
+        scaled_action = (action + 1.0) * 0.5 * 13.0
+        data = state.data.replace(ctrl=scaled_action)
         data = mjx.step(self.mjx_model, data)
 
         reward, new_gate, curr_pos = self.check_gate_passage(

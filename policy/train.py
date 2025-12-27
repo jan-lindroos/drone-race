@@ -40,7 +40,7 @@ def progress_fn(step: int, metrics: dict[str, Any]) -> None:
 
 def train(
     num_timesteps: int = 10_000_000,
-    episode_length: int = 1000,
+    episode_length: int = 5000,
     save_checkpoint_path: str | None = None,
 ) -> tuple[Any, Any, dict[str, Any]]:
     """Train a PPO policy for drone racing.
@@ -80,9 +80,18 @@ def train(
         episode_length=episode_length,
         network_factory=network_factory,
         save_checkpoint_path=save_checkpoint_path,
-        num_evals=100,
-        og_training_metrics=True,
+        num_evals=200,
+        log_training_metrics=True,
         wrap_env=False,
+        max_devices_per_host=8,
+        num_envs=2048,
+        batch_size=256,
+        num_minibatches=8,
+        unroll_length=20,
+        learning_rate=3e-4,
+        entropy_cost=1e-3,
+        discounting=0.99,
+        normalize_observations=True,
     )
 
     make_policy, params, metrics = train_fn(
